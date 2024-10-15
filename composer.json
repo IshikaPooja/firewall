@@ -1,0 +1,15 @@
+{
+    "name": "firwalle/rule",
+    "description": "this is for firwalle rules",
+    "type": "project",
+    "require": {
+        "php": "^8.2",
+        "jenssegers/agent": "^2.6"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Firwalle\\Rule\\": "src/"
+        }
+    }
+}
