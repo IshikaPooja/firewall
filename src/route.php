@@ -2,9 +2,6 @@
 
 use Firwalle\Rule\FirwalleController;
 
-Route::get('hlo',function(){
-    echo 'dfgf';
-});
 Route::middleware(['check.rule'])->group(function () {
     
     Route::name('firewall.')->prefix('firewall')->group(function(){
@@ -24,5 +21,7 @@ Route::middleware(['check.rule'])->group(function () {
         Route::post('/geolist_store',[FirwalleController::class,'geolist_store'])->name("geolist_store");
     });
 
-
+ Route::fallback(function() {
+        abort(404);
+      });
 });
