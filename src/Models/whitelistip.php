@@ -10,6 +10,6 @@ class whitelistip extends Model
     use HasFactory;
     protected $table = "whiteip";
     protected $fillable = [
-     'ip'   
+     'ip', 
     ];
 }

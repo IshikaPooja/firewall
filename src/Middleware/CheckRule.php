@@ -13,10 +13,15 @@ use Firwalle\Rule\Models\{
     notfound
   };
 
+  use Illuminate\Http\Request;
+
 class CheckRule
 {
     public function handle($request, Closure $next)
     {
+
+
+
 
         // Your middleware logic here
          $ip = $request->ip();
@@ -52,48 +57,22 @@ class CheckRule
         }
 
 
-         //404 error save
-         $response =  $next($request); 
-         if($response->getStatusCode() == 404){
-            
-             if ($this->shouldExcludeRequest($request)) {
-                 return $response;
-             }
- 
-             $notfound_data = notfound::where('ip',$ip)->where('error_code',$response->getStatusCode())->first();
-               
-             if($notfound_data){
-                 if( $notfound_data->count <= 5){
-                     $notfound_data->count = $notfound_data->count + 1;
-                     $notfound_data->save();
- 
-                 }else{
-                     $whiteip_data = whitelistip::where('ip',$ip)->first();
-                     if(!$whiteip_data){
-                         $blacklist_data =  blacklistip::where('ip',$ip)->first();
-                         if(!$blacklist_data ){
-                             blacklistip::create([
-                                 'ip' => $ip
-                             ]);
-                         }
-                     }
-                 }
- 
-             }else{
-                 notfound::create([
-                     'ip' => $ip,
-                     'count' => '1',
-                     'error_code' => $response->getStatusCode()
-                 ]); 
-             }
- 
-             $message = '404 Not Found';
-             return response(view('Rule::error_show')->with('Inactive',$message));
-         }
-      
-        return $next($request);
+        //404 error save
+        $response = $next($request);
+        if ($response->getStatusCode() == 404) {
+            if (!$this->shouldExcludeRequest($request) && !$request->ajax()) {
+                $this->handle404Error($request, $request->ip());
+            }
 
-      
+            $message = '404 Not Found !';
+            return response(view('Rule::error_show')->with('Inactive',$message));
+
+        }
+
+         // Return the response
+         return $response;
+
+
     }
 
 
@@ -115,4 +94,33 @@ class CheckRule
         return in_array($urlPath, $excludedExtensions);
     }
 
+    private function handle404Error($request, $ip)
+    {
+
+        $notfound_data = notfound::where('ip', $ip)->where('error_code', 404)->first();
+
+        if ($notfound_data) {
+            if ($notfound_data->count < 5) {
+                $notfound_data->count += 1;
+                $notfound_data->save();
+            } else {
+                // Blacklist the IP if it's not whitelisted and already encountered 5+ 404s
+                $whiteip_data = whitelistip::where('ip', $ip)->first();
+                if (!$whiteip_data) {
+                    $blacklist_data = blacklistip::where('ip', $ip)->first();
+                    if (!$blacklist_data) {
+                        blacklistip::create(['ip' => $ip]);
+                    }
+                }
+            }
+        } else {
+            // Create a new entry for this IP in the notfound table
+            notfound::create([
+                'ip' => $ip,
+                'count' => 1,
+                'error_code' => 404
+            ]);
+        }
+
+    }
 }
